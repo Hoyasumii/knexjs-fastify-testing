@@ -8,7 +8,7 @@ export declare module "knex/types/tables" {
       birth_date: Date;
       created_at: string;
     };
-    translations: {
+    transactions: {
       id: string;
       title: string;
       type: "credit" | "debit";
