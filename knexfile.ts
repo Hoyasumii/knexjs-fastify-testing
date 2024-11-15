@@ -1,3 +1,3 @@
-import { config } from "@/database/";
+import { config } from "@/database";
 
 export default config;

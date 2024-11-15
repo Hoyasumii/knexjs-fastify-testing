@@ -1,10 +1,11 @@
 import fastify from "fastify";
+import knex from "./database";
 
 const app = fastify();
 
 app.get("/", async (request, reply) => {
   reply.status(200);
-  return "Hello World";
+  return await knex("sqlite_schema").select("*");
 });
 
 app.listen({ port: parseInt(process.env.PORT) }, (err, address) => {
@@ -12,5 +13,5 @@ app.listen({ port: parseInt(process.env.PORT) }, (err, address) => {
 
   address = address.replace(/\[::1]/, "localhost");
 
-  console.log(`Server is running at: ${address}`);
+  console.log(`Server is running at ${address}`);
 });
