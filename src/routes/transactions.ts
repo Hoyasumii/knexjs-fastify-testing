@@ -1,10 +1,20 @@
+import { randomUUID } from "node:crypto";
 import { FastifyInstance } from "fastify";
 import knex from "@/database";
 import { z } from "zod";
 
 export default async function (app: FastifyInstance) {
-  app.get("/", async () => {
-    return await knex("transactions").select();
+  app.get("/", async (request, reply) => {
+    const sessionId = request.cookies.sessionId;
+
+    if (!sessionId) {
+      return reply.status(404).send({
+        message: `👻 Not Found at ${request.url}(${request.method})`,
+        cause: "There is no sessionId",
+      });
+    }
+
+    return await knex("transactions").where("session_id", sessionId).select("id", "title", "type", "amount");
   });
 
   app.get("/summary", async () => {
@@ -35,7 +45,7 @@ export default async function (app: FastifyInstance) {
 
     if (!transaction) {
       return reply.status(404).send({
-        message: `⛔ Not Found at ${request.url}(${request.method})`,
+        message: `👻 Not Found at ${request.url}(${request.method})`,
         cause: `Transaction not found ${id}`,
       });
     }
@@ -49,6 +59,13 @@ export default async function (app: FastifyInstance) {
       amount: z.number(),
       type: z.enum(["credit", "debit"]),
     });
+
+    if (!request.body) {
+      return reply.status(400).send({
+        message: `🚫 Bad Request at ${request.url}(${request.method})`,
+        cause: "Body is Undefined",
+      });
+    }
 
     const { amount, title, type } = request.body as z.infer<
       typeof createTransactionBodySchema
@@ -64,18 +81,22 @@ export default async function (app: FastifyInstance) {
       });
     }
 
+    const sessionId = request.cookies.sessionId || randomUUID();
+
     const transactionId = await knex("transactions")
       .insert({
         title,
         amount: type === "credit" ? amount : -amount,
         type,
+        session_id: sessionId,
       })
       .returning("id");
 
-    console.log(transactionId);
-
     return reply
       .status(201)
+      .cookie("sessionId", sessionId, {
+        maxAge: 60 * 10,
+      })
       .send(`✅ Transaction was been sucessful: ${transactionId[0].id}`);
   });
 }
