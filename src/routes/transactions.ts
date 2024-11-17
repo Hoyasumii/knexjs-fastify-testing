@@ -1,57 +1,80 @@
 import { randomUUID } from "node:crypto";
 import { FastifyInstance } from "fastify";
-import knex from "@/database";
 import { z } from "zod";
+import knex from "@/database";
+import { checkSessionIdExists } from "@/middleware";
 
 export default async function (app: FastifyInstance) {
-  app.get("/", async (request, reply) => {
-    const sessionId = request.cookies.sessionId;
+  app.get(
+    "/",
+    {
+      preHandler: [checkSessionIdExists],
+    },
+    async (request) => {
+      const sessionId = request.cookies.sessionId;
 
-    if (!sessionId) {
-      return reply.status(404).send({
-        message: `👻 Not Found at ${request.url}(${request.method})`,
-        cause: "There is no sessionId",
-      });
+      return await knex("transactions")
+        .where("session_id", sessionId)
+        .select("id", "title", "type", "amount");
     }
+  );
 
-    return await knex("transactions").where("session_id", sessionId).select("id", "title", "type", "amount");
-  });
+  app.get(
+    "/summary",
+    {
+      preHandler: [checkSessionIdExists],
+    },
+    async (request) => {
+      const sessionId = request.cookies.sessionId;
 
-  app.get("/summary", async () => {
-    return await knex("transactions").sum("amount", { as: "amount" }).first();
-  });
-
-  app.get("/:id", async (request, reply) => {
-    const getTransactionIdParamsSchema = z.object({
-      id: z.string().uuid(),
-    });
-
-    const getTransactionIdParamsSchemaParsed =
-      getTransactionIdParamsSchema.safeParse(request.params);
-
-    if (!getTransactionIdParamsSchemaParsed.success) {
-      return reply.status(400).send({
-        message: `🚫 Bad Request at ${request.url}(${request.method})`,
-        cause: getTransactionIdParamsSchemaParsed.error.issues,
-      });
+      return await knex("transactions")
+        .where("session_id", sessionId)
+        .sum("amount", { as: "amount" })
+        .first();
     }
+  );
 
-    const { id } = request.params as { id: string };
-
-    const transaction = await knex("transactions")
-      .where("id", id)
-      .first()
-      .select("title", "type", "amount");
-
-    if (!transaction) {
-      return reply.status(404).send({
-        message: `👻 Not Found at ${request.url}(${request.method})`,
-        cause: `Transaction not found ${id}`,
+  app.get(
+    "/:id",
+    {
+      preHandler: [checkSessionIdExists],
+    },
+    async (request, reply) => {
+      const getTransactionIdParamsSchema = z.object({
+        id: z.string().uuid(),
       });
-    }
 
-    return reply.status(200).send(transaction);
-  });
+      const getTransactionIdParamsSchemaParsed =
+        getTransactionIdParamsSchema.safeParse(request.params);
+
+      if (!getTransactionIdParamsSchemaParsed.success) {
+        return reply.status(400).send({
+          message: `🚫 Bad Request at ${request.url}(${request.method})`,
+          cause: getTransactionIdParamsSchemaParsed.error.issues,
+        });
+      }
+
+      const { id } = request.params as { id: string };
+      const sessionId = request.cookies.sessionId;
+
+      const transaction = await knex("transactions")
+        .where({
+          session_id: sessionId,
+          id,
+        })
+        .first()
+        .select("title", "type", "amount");
+
+      if (!transaction) {
+        return reply.status(404).send({
+          message: `👻 Not Found at ${request.url}(${request.method})`,
+          cause: `Transaction not found ${id}`,
+        });
+      }
+
+      return reply.status(200).send(transaction);
+    }
+  );
 
   app.post("/", async (request, reply) => {
     const createTransactionBodySchema = z.object({
