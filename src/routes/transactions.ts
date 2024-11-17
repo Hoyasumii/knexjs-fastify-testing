@@ -7,6 +7,10 @@ export default async function (app: FastifyInstance) {
     return await knex("transactions").select();
   });
 
+  app.get("/summary", async () => {
+    return await knex("transactions").sum("amount", { as: "amount" }).first();
+  });
+
   app.get("/:id", async (request, reply) => {
     const getTransactionIdParamsSchema = z.object({
       id: z.string().uuid(),
@@ -24,7 +28,10 @@ export default async function (app: FastifyInstance) {
 
     const { id } = request.params as { id: string };
 
-    const transaction = await knex("transactions").where("id", id).first().select("title", "type", "amount");
+    const transaction = await knex("transactions")
+      .where("id", id)
+      .first()
+      .select("title", "type", "amount");
 
     if (!transaction) {
       return reply.status(404).send({
@@ -64,8 +71,8 @@ export default async function (app: FastifyInstance) {
         type,
       })
       .returning("id");
-    
-      console.log(transactionId)
+
+    console.log(transactionId);
 
     return reply
       .status(201)
