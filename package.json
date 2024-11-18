@@ -7,6 +7,7 @@
   "scripts": {
     "start:dev": "tsx watch --env-file=.env src/server.ts",
     "knex": "node --env-file=.env --no-warnings --import tsx ./node_modules/knex/bin/cli.js",
+    "knex:test": "node --env-file=.env.test --no-warnings --import tsx ./node_modules/knex/bin/cli.js",
     "test": "vitest"
   },
   "keywords": [],
