@@ -1,9 +1,4 @@
-import { loadEnv } from "@/utils";
 import { Knex } from "knex";
-
-if (!process.env.DB_PATH) {
-  loadEnv();
-}
 
 export const config: Knex.Config = {
   client: "sqlite",
