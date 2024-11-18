@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
-import knex from "@/database";
+import knex from "database";
 import { checkSessionIdExists } from "@/middleware";
 
 export default async function (app: FastifyInstance) {

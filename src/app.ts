@@ -2,7 +2,7 @@ import fastify from "fastify";
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import { faker } from "@faker-js/faker";
-import knex from "./database";
+import knex from "../database";
 import logger from "./logger";
 import { transactions } from "./routes";
 

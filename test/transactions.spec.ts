@@ -1,12 +1,33 @@
-import { expect, beforeAll, afterAll, describe, it } from "vitest";
+import { execSync } from "node:child_process";
+import { rmSync } from "node:fs";
+import {
+  expect,
+  beforeAll,
+  afterAll,
+  describe,
+  it,
+  beforeEach,
+  afterEach,
+} from "vitest";
 import request from "supertest";
 import app from "@/app";
 
 beforeAll(async () => {
+  execSync("pnpm knex:test migrate:latest");
+
   await app.ready();
 });
 
+beforeEach(() => {
+  execSync("pnpm knex:test migrate:latest");
+});
+
+afterEach(() => {
+  execSync("pnpm knex:test migrate:rollback --all");
+});
+
 afterAll(async () => {
+  rmSync(`${process.env.DB_PATH}/content.test.db`);
   await app.close();
 });
 
